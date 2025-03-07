@@ -2,7 +2,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 from dotenv import load_dotenv
-
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.dao.database import SessionLocal  
 # Загружаем переменные окружения
 load_dotenv()
 
@@ -27,7 +28,15 @@ async_session_maker = SessionLocal
 # Базовый класс для моделей
 Base = declarative_base()
 
-# Функция для получения сессии
-async def get_db():
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.dao.database import SessionLocal  # ваша фабрика сессий
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()  # автоматический commit после успешного запроса
+        except Exception:
+            await session.rollback()
+            raise

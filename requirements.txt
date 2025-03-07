@@ -20,3 +20,6 @@ cryptography
 PyJWT
 python-multipart
 pydantic-settings
+uvicorn[standard]
+passlib[bcrypt]
+pydantic-settings

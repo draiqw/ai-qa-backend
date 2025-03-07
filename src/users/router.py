@@ -1,4 +1,3 @@
-# routers/user.py
 import json
 import uuid
 from uuid import uuid4
@@ -19,8 +18,8 @@ from src.users.schemas import UserCreateSchema, AuthSchema
 
 router = APIRouter()
 
-# Настройки безопасности
-SECRET_KEY = "your_secret_key_here"  # Рекомендуется брать из переменных окружения
+# Настройки безопасности (рекомендуется брать SECRET_KEY из переменных окружения)
+SECRET_KEY = "your_secret_key_here"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -36,13 +35,12 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 @router.post("/users")
 async def register_user(user: UserCreateSchema, db: AsyncSession = Depends(get_db)):
     # Проверка на существование пользователя по email, phone или login
-    existing = (await db.execute(
-        select(User).where(
-            (User.email == user.email) |
-            (User.phone == user.phone) |
-            (User.login == user.login)
-        )
-    )).scalars().first()
+    existing = await UserDAO.get_by_unique_fields(
+        session=db,
+        email=user.email,
+        phone=user.phone,
+        login=user.login
+    )
     if existing:
         raise HTTPException(status_code=400, detail="User already exists")
     
@@ -97,13 +95,26 @@ async def update_user(user_id: str, user_update: UserCreateSchema, db: AsyncSess
     update_data = user_update.dict(exclude_unset=True)
     if "password" in update_data:
         update_data["password"] = sha256_crypt.hash(update_data["password"])
-    await UserDAO.update(session=db, id=user_id, **update_data)
-    return {"message": "User updated"}
+    updated_user = await UserDAO.update(session=db, id=user_id, **update_data)
+    return {"message": "User updated", "user": {
+        "id": str(updated_user.id),
+        "name": updated_user.name,
+        "surname": updated_user.surname,
+        "middlename": updated_user.middlename,
+        "phone": updated_user.phone,
+        "login": updated_user.login,
+        "email": updated_user.email,
+        "role": updated_user.role,
+        "bitrix_id": updated_user.bitrix_id,
+    }}
 
-@router.delete("/users")
-async def delete_user(user_id: str, db: AsyncSession = Depends(get_db)):
-    await UserDAO.delete(session=db, id=user_id)
-    return {"message": "User deleted"}
+from uuid import UUID
+
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: UUID, db: AsyncSession = Depends(get_db)):
+    # FastAPI автоматически преобразует строку в UUID или выдаст ошибку 422, если формат неверный
+    deleted_user = await UserDAO.delete(session=db, id=str(user_id))
+    return {"message": "User deleted", "deleted_id": str(deleted_user.id)}
 
 # Аутентификация и работа с профилем
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth")
@@ -162,5 +173,15 @@ async def update_profile(
     update_data = user_update.dict(exclude_unset=True)
     if "password" in update_data:
         update_data["password"] = sha256_crypt.hash(update_data["password"])
-    await UserDAO.update(session=db, id=current_user.id, **update_data)
-    return {"message": "Profile updated successfully"}
+    updated_user = await UserDAO.update(session=db, id=current_user.id, **update_data)
+    return {"message": "Profile updated successfully", "user": {
+        "id": str(updated_user.id),
+        "name": updated_user.name,
+        "surname": updated_user.surname,
+        "middlename": updated_user.middlename,
+        "phone": updated_user.phone,
+        "login": updated_user.login,
+        "email": updated_user.email,
+        "role": updated_user.role,
+        "bitrix_id": updated_user.bitrix_id,
+    }}
