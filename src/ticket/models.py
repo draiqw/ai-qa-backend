@@ -19,7 +19,7 @@ class Ticket(Base):
     
     user_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("user.id"),
+        ForeignKey("users.id"),
         nullable=True,
     )
     

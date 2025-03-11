@@ -51,6 +51,7 @@ async def register_user(user: UserCreateSchema, db: AsyncSession = Depends(get_d
     user_data["bitrix_id"] = None
 
     new_user = await UserDAO.create(session=db, **user_data)
+    await db.commit()
     return {"message": f"You registered successfully: {new_user.login}"}
 
 @router.get("/users")
@@ -96,6 +97,7 @@ async def update_user(user_id: str, user_update: UserCreateSchema, db: AsyncSess
     if "password" in update_data:
         update_data["password"] = sha256_crypt.hash(update_data["password"])
     updated_user = await UserDAO.update(session=db, id=user_id, **update_data)
+    await db.commit()
     return {"message": "User updated", "user": {
         "id": str(updated_user.id),
         "name": updated_user.name,
@@ -108,12 +110,11 @@ async def update_user(user_id: str, user_update: UserCreateSchema, db: AsyncSess
         "bitrix_id": updated_user.bitrix_id,
     }}
 
-from uuid import UUID
-
 @router.delete("/users/{user_id}")
-async def delete_user(user_id: UUID, db: AsyncSession = Depends(get_db)):
+async def delete_user(user_id: str, db: AsyncSession = Depends(get_db)):
     # FastAPI автоматически преобразует строку в UUID или выдаст ошибку 422, если формат неверный
-    deleted_user = await UserDAO.delete(session=db, id=str(user_id))
+    deleted_user = await UserDAO.delete(session=db, id=user_id)
+    await db.commit()
     return {"message": "User deleted", "deleted_id": str(deleted_user.id)}
 
 # Аутентификация и работа с профилем
