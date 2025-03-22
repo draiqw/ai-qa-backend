@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, Union
 import uuid
 
 class UserCreateSchema(BaseModel):
@@ -28,3 +28,7 @@ class UserResponseSchema(BaseModel):
 class AuthSchema(BaseModel):
     email: EmailStr
     password: str
+
+class UserDeleteResponce(BaseModel):
+    message: str
+    id: str
