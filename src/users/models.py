@@ -3,11 +3,9 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.dao.database import Base
-from enum import Enum as PyEnum
-
+from src.ticket.models import Ticket
 class User(Base):
     __tablename__ = "users"
-    
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,

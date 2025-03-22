@@ -27,8 +27,8 @@ class Ticket(Base):
     connection_type = Column(String(50), nullable=False)
     dialogue = Column(JSON, nullable=False)
     status = Column(String(20), nullable=False, default="open")
-    time_open = Column(String(30), default=datetime.utcnow)
-    time_close = Column(String(30), nullable=True)
+    time_open = Column(DateTime, default=datetime.utcnow)
+    time_close = Column(DateTime, default=datetime.utcnow)
     category = Column(String(50), nullable=False)
     
     user = relationship("User", back_populates="tickets", cascade="all, delete-orphan", single_parent=True)
