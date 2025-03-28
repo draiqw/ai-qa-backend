@@ -11,7 +11,7 @@ load_dotenv()
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "db")  # Имя сервиса PostgreSQL в Docker Composer
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "db")
 # POSTGRES_HOST="localhost"
 
 # Формируем строку подключения
