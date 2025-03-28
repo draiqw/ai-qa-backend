@@ -124,36 +124,55 @@ async def authenticate_user(
 
 
 # Получение текущего пользователя
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
+async def get_current_user(
+        token: str = Depends(oauth2_scheme),
+        db: AsyncSession = Depends(get_db)
+) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Не удалось проверить учетные данные",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
     except PyJWTError:
         raise credentials_exception
-    user = await UserDAO.get(session=db, id=user_id)
+
+    user = await UserDAO.get(
+        session=db,
+        id=user_id
+    )
     if user is None:
         raise credentials_exception
     return user
 
 # Эндпоинт получения профиля текущего пользователя
 @router.get("/profile", response_model=UserResponseSchema)
-async def read_profile(current_user: User = Depends(get_current_user)):
+async def read_profile(
+        current_user: User = Depends(get_current_user)
+):
     return current_user
 
 
 # Эндпоинт обновления профиля текущего пользователя
 @router.put("/profile", response_model=UserResponseSchema)
-async def update_profile(user_update: UserCreateSchema, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def update_profile(
+        user_update: UserCreateSchema,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
     update_data = user_update.dict(exclude_unset=True)
+
     if "password" in update_data:
         update_data["password"] = pwd_context.hash(update_data["password"])
+
     updated_user = await UserDAO.update(session=db, id=current_user.id, **update_data)
-    await db.commit()
+
     return updated_user
