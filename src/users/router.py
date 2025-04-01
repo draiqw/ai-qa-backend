@@ -64,7 +64,7 @@ async def get_all_users(
     page_result = await UserDAO.paginate(
         session=db,
         page=1,
-        page_size=-1  # отключаем лимит, возвращаются все записи
+        page_size=-1
     )
     return page_result.values
 

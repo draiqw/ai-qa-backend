@@ -13,8 +13,6 @@ from datetime import datetime, timedelta
 class UserDAO(BaseDAO[User]):
     model = User
 
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
     @classmethod
     async def register(cls, session: AsyncSession, user: UserCreateSchema) -> User:
         # Проверка уникальности пользователя через пагинацию
