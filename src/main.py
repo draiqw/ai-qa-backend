@@ -20,6 +20,9 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],         # Разрешаем все методы (GET, POST, PUT, DELETE и т.д.)
     allow_headers=["*"],         # Разрешаем все заголовки
+
+
+
 )
 
 # Подключение маршрутов
