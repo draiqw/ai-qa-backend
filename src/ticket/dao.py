@@ -2,10 +2,13 @@
 
 import uuid
 import aiohttp
-
+from typing import List
+from sqlalchemy import Sequence
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from typing import Optional
 from src.users.models import User
 from src.ticket.models import Ticket
 from src.dao.base import BaseDAO
@@ -15,26 +18,35 @@ class TicketDAO(BaseDAO[Ticket]):
     WEBHOOK_URL = "https://b24-ro4m0k.bitrix24.ru/rest/1"
     roles_access = ["admin", "manager"]
     @classmethod
-    async def get_user_info(cls, bitrix_user_id: int) -> dict:
+    async def get_user_info(cls, bitrix_user_id: Optional[int] = None, email: Optional[str] = None) -> dict:
         """
-        Получает информацию о пользователе по его ID через метод user.get (из Bitrix24).
+        Получает информацию о пользователе по его Bitrix ID или email через метод user.get (из Bitrix24).
+        Обязательно должен быть передан хотя бы один из параметров.
         """
-        if not bitrix_user_id:
-            raise ValueError("Не передан user_id")
+        if not bitrix_user_id and not email:
+            raise ValueError("Необходимо передать хотя бы один параметр: bitrix_user_id или email")
 
         url = f"{cls.WEBHOOK_URL}/7c2l2pndd6rmc44g/user.get.json"
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
-        payload = {"filter": {"ID": str(bitrix_user_id)}}
+
+        # Формируем фильтр: добавляем ключи, если соответствующие значения переданы
+        filter_params = {}
+        if bitrix_user_id:
+            filter_params["ID"] = str(bitrix_user_id)
+        if email:
+            filter_params["EMAIL"] = email
+
+        payload = {"filter": filter_params}
 
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
                     if not data.get("result") or len(data["result"]) == 0:
-                        raise Exception(f"Пользователь с ID {bitrix_user_id} не найден в Bitrix24")
+                        raise Exception(f"Пользователь с параметрами {payload['filter']} не найден в Bitrix24")
                     return data["result"][0]
                 else:
                     error_text = await response.text()
@@ -152,3 +164,29 @@ class TicketDAO(BaseDAO[Ticket]):
         # Если всё хорошо — запрашиваем сообщения из Bitrix
         chat_data = await cls.get_chat_messages(chat_id, limit)
         return chat_data
+
+    @classmethod
+    async def get_all(cls, db: AsyncSession) -> List[Ticket]:
+        """
+        Получает все тикеты из базы данных.
+        """
+        result = await db.execute(select(Ticket))
+        tickets = result.scalars().all()
+        return tickets
+
+    @classmethod
+    async def  responsible_operators(cls,chat_id:str):
+        endpoint = f"{cls.WEBHOOK_URL}/ixlly9svv3uw9my2/imopenlines.dialog.get.json"
+        params = {"DIALOG_ID": chat_id}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(endpoint, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if "result" in data:
+                        result = data["result"]
+                        return result.get("manager_list", [])
+                    else:
+                        raise Exception(f"Ошибка в ответе API: {data}")
+                else:
+                    text = await response.text()
+                    raise Exception(f"Ошибка запроса: {response.status} - {text}")

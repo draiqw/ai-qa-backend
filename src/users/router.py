@@ -174,5 +174,5 @@ async def update_profile(
         update_data["password"] = pwd_context.hash(update_data["password"])
 
     updated_user = await UserDAO.update(session=db, id=current_user.id, **update_data)
-
     return updated_user
+

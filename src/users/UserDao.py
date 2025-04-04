@@ -49,4 +49,3 @@ class UserDAO(BaseDAO[User]):
         )
 
         return new_user
-
