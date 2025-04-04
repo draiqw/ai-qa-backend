@@ -19,3 +19,5 @@ class UserDAO(BaseDAO[User]):
             query = query.where(getattr(cls.model, key) == value)
         result = await session.execute(query)
         return result.scalars().first()
+
+    

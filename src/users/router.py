@@ -186,3 +186,4 @@ async def update_profile(
         "role": updated_user.role,
         "bitrix_id": updated_user.bitrix_id,
     }}
+
